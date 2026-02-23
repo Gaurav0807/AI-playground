@@ -4,3 +4,8 @@ langchain-community
 langchain-aws 
 boto3 
 python-dotenv
+chromadb
+ollama
+pydantic
+sentence-transformers
+langchain_openai
