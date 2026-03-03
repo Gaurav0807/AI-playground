@@ -14,3 +14,6 @@ Answers follow-up questions
 User (Slack Channel) --> Uploads CSV --> Slack sends event to API Gateway --> API Gateway triggers Lambda --> 
 Lambda downloads file from Slack --> Lambda stores CSV in S3 --> Lambda parses transactions --> Lambda calls Bedrock (LLM) --> Lambda responds back to Slack
 
+
+
+![Agent Output](/AI-Personal-Finance-Optimization-Agent/ai_agent_output.png)
