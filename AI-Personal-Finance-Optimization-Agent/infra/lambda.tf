@@ -8,4 +8,10 @@ resource "aws_lambda_function" "test_agent" {
   timeout          = 30
   memory_size      = 512
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  environment {
+  variables = {
+    GUARDRAIL_ID = aws_bedrock_guardrail.test_guardrail.guardrail_id
+    GUARDRAIL_VERSION = "DRAFT"
+    }
+  }
 }

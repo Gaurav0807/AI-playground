@@ -2,7 +2,11 @@ import json
 import csv
 import io
 import boto3
+import os
 
+
+GUARDRAIL_ID = os.environ.get("GUARDRAIL_ID")
+GUARDRAIL_VERSION = os.environ.get("GUARDRAIL_VERSION", "DRAFT")
 bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
 
 def categorize(description):
@@ -24,40 +28,48 @@ def categorize(description):
 
     return "Other"
 
-def get_ai_insights(financial_summary):
+def get_ai_insights(financial_summary, transactions):
 
     prompt = f"""
-    You are a professional personal financial advisor.
+    Analyze the following financial transactions and summary.
 
-    Here is the user  financial summary:
+    Transactions:
+    {transactions}
 
+    Financial Summary:
     {json.dumps(financial_summary, indent=2)}
 
-    Please provide:
-    1. Spending analysis
-    2. Risk areas
-    3. Specific optimization suggestions
-    4. Estimated possible monthly savings
-
-    Keep response concise and practical.
+    Provide:
+    - spending analysis
+    - possible financial risks
+    - suggestions to optimize spending
+    - estimated monthly savings
     """
 
-    response = bedrock.invoke_model(
-        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-        body=json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "max_tokens": 200
-        })
-    )
+    converse_params = {
+        "modelId": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "messages": [
+            {
+                "role": "user",
+                "content": [{"text": prompt}]
+            }
+        ],
+        "inferenceConfig": {
+            "maxTokens": 1000,
+            "temperature": 0.7
+        }
+    }
 
-    result = json.loads(response["body"].read())
-    return result["content"][0]["text"]
+    if GUARDRAIL_ID:
+        converse_params["guardrailConfig"] = {
+            "guardrailIdentifier": GUARDRAIL_ID,
+            "guardrailVersion": GUARDRAIL_VERSION
+        }
+
+    response = bedrock.converse(**converse_params)
+
+    return response["output"]["message"]["content"][0]["text"]
+
 
 def handler(event, context):
 
@@ -78,11 +90,19 @@ def handler(event, context):
         total_income = 0
         total_expense = 0
         category_totals = {}
+        transactions_list = []
 
         for row in csv_reader:
             amount = float(row["amount"])
             description = row["description"]
             category = categorize(description)
+
+            transactions_list.append({
+                "date": row.get("date", ""),
+                "description": description,
+                "amount": amount,
+                "category": category
+            })
 
             if amount > 0:
                 total_income += amount
@@ -102,7 +122,14 @@ def handler(event, context):
             "category_breakdown": category_totals
         }
 
-        ai_advice = get_ai_insights(financial_summary)
+        print("Financial summary:", financial_summary)
+        print("Using Guardrail:", GUARDRAIL_ID)
+        print("GUARDRAIL_VERSION:", GUARDRAIL_VERSION)
+
+        ai_advice = get_ai_insights(financial_summary, json.dumps(transactions_list, indent=2))
+        
+
+        print("AI Advice:", ai_advice)
 
         response = {
             "financial_summary": financial_summary,
@@ -116,6 +143,8 @@ def handler(event, context):
         }
 
     except Exception as e:
+        print("Error occurred:", str(e))
+
         return {
             "statusCode": 500,
             "body": json.dumps({"error": str(e)})
