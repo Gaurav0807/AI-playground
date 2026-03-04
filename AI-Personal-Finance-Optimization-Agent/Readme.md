@@ -17,3 +17,34 @@ Lambda downloads file from Slack --> Lambda stores CSV in S3 --> Lambda parses t
 
 
 ![Agent Output](/AI-Personal-Finance-Optimization-Agent/ai_agent_output.png)
+
+````
+User Input
+     │
+     ▼
+  ┌──────────────────────┐
+  │  Content Filters     │──→ Hate/Violence/Sexual/Prompt Attack? → BLOCKED
+  │  (input_strength)    │
+  └──────────┬───────────┘
+             │ Pass
+             ▼
+  ┌──────────────────────┐
+  │  PII Filter           │──→ Credit card found? → BLOCKED
+  │  (input scan)         │──→ Email found? → ANONYMIZED (masked)
+  └──────────┬───────────┘
+             │ Pass
+             ▼
+  ┌──────────────────────┐
+  │  Bedrock Model        │──→ Generates response
+  │  (Claude 3 Sonnet)    │
+  └──────────┬───────────┘
+             │
+             ▼
+  ┌──────────────────────┐
+  │  Content Filters      │──→ Hate/Violence/Sexual in output? → BLOCKED
+  │  (output_strength)    │
+  └──────────┬───────────┘
+             │ Pass
+             ▼
+        Response to User
+````
