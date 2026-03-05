@@ -1,6 +1,15 @@
 # AI Personal Finance Optimization Agent on AWS
 Using Terraform + AWS Bedrock + Memory + API + Secure Design
 
+
+
+
+![Architecture](/AI-Personal-Finance-Optimization-Agent/Architecture_Diagram.png)
+
+
+
+
+
 ## User uploads bank statement (CSV) → Agent
 - Categorizes expenses
 - Detects unnecessary subscriptions
