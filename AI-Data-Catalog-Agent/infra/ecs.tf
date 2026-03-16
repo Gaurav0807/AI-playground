@@ -1,5 +1,5 @@
 
-resource "aws_ecs_cluster" "ai_agent_cluster" {
+resource "aws_ecs_cluster" "ai_agent_cluster" { #Its just a namespace that holds your running services
     name="ai-agent-cluster"
 
     setting { #Monitor Container in amazon cloudwatch
@@ -16,7 +16,7 @@ resource "aws_ecs_cluster" "ai_agent_cluster" {
 resource "aws_ecs_task_definition" "ai_agent_task" {
   family                   = "ai-agent-task"
   network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"] #Run this container using Fargate
+  requires_compatibilities = ["FARGATE"] #Run this container using Fargate thats serverless
 
   cpu    = "256"
   memory = "512"
@@ -28,7 +28,7 @@ resource "aws_ecs_task_definition" "ai_agent_task" {
       name  = "ai-agent-container"
       image = "${aws_ecr_repository.ai_agent_repo.repository_url}:latest"
 
-      essential = true
+      essential = true #If this container crashes,entire task is marked as failed and gets restarted
 
       portMappings = [
         {
@@ -40,7 +40,7 @@ resource "aws_ecs_task_definition" "ai_agent_task" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/ai-agent"
+          awslogs-group         = "/ecs/ai-agent-test"
           awslogs-region        = "us-east-1"
           awslogs-stream-prefix = "ecs"
         }
@@ -51,7 +51,7 @@ resource "aws_ecs_task_definition" "ai_agent_task" {
 
 
 resource "aws_ecs_service" "ai_agent_service" {
-  name            = "ai-agent-service"
+  name            = "ai-agent-service" # Keep 1 copy running, put it behind the load balancer
   cluster         = aws_ecs_cluster.ai_agent_cluster.id
   task_definition = aws_ecs_task_definition.ai_agent_task.arn
   desired_count   = 1
