@@ -1,5 +1,5 @@
 
-resource "aws_ecs_cluster" "ai_agent_cluster" { #Its just a namespace that holds your running services
+resource "aws_ecs_cluster" "ai_agent_cluster" {
     name="ai-agent-cluster"
 
     setting { #Monitor Container in amazon cloudwatch
@@ -16,19 +16,30 @@ resource "aws_ecs_cluster" "ai_agent_cluster" { #Its just a namespace that holds
 resource "aws_ecs_task_definition" "ai_agent_task" {
   family                   = "ai-agent-task"
   network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"] #Run this container using Fargate thats serverless
+  requires_compatibilities = ["FARGATE"] #Run this container using Fargate
 
   cpu    = "256"
   memory = "512"
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn = aws_iam_role.ecs_task_role.arn
 
   container_definitions = jsonencode([
     {
       name  = "ai-agent-container"
       image = "${aws_ecr_repository.ai_agent_repo.repository_url}:latest"
 
-      essential = true #If this container crashes,entire task is marked as failed and gets restarted
+      essential = true
+      environment = [
+        {
+            name  = "AWS_REGION"
+            value = "us-east-1"
+        },
+        {
+            name  = "BEDROCK_MODEL"
+            value = "anthropic.claude-v2"
+        }
+    ]
 
       portMappings = [
         {
@@ -40,7 +51,7 @@ resource "aws_ecs_task_definition" "ai_agent_task" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/ai-agent-test"
+          awslogs-group         = "/ecs/ai-agent"
           awslogs-region        = "us-east-1"
           awslogs-stream-prefix = "ecs"
         }
@@ -51,7 +62,7 @@ resource "aws_ecs_task_definition" "ai_agent_task" {
 
 
 resource "aws_ecs_service" "ai_agent_service" {
-  name            = "ai-agent-service" # Keep 1 copy running, put it behind the load balancer
+  name            = "ai-agent-service"
   cluster         = aws_ecs_cluster.ai_agent_cluster.id
   task_definition = aws_ecs_task_definition.ai_agent_task.arn
   desired_count   = 1
@@ -62,7 +73,7 @@ resource "aws_ecs_service" "ai_agent_service" {
       aws_subnet.public_subnet_1.id,
       aws_subnet.public_subnet_2.id
     ]
-
+    security_groups  = [aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
 
@@ -76,3 +87,4 @@ resource "aws_ecs_service" "ai_agent_service" {
     aws_lb_listener.ai_agent_listener
   ]
 }
+
