@@ -22,7 +22,7 @@ class AgentState(BaseModel):
 def glue_catalog_tool(query: str) -> str:
     """Use this tool to find tables and columns in AWS Glue catalog.
     Helpful when user asks about datasets, tables, schema, or user data."""
-    database_name = "test_db"
+    database_name = "test__db"
     tables = get_glue_table(database_name)
     return str(tables)
 
