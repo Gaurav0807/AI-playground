@@ -4,7 +4,7 @@ An AI-powered agent that queries AWS Glue Data Catalog using natural language. B
 
 
 
-![Agent-Architecture](/workspaces/AI-playground/AI-Data-Catalog-Agent/Agent-AI-Catalog.png)
+![Agent-AI-Catalog](/Agent-AI-Catalog.png)
 
 ## Architecture
 
